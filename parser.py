@@ -1,16 +1,44 @@
 import openpyxl
 import os
 from graphs import graph_define
+from langdetect import detect
 
+
+SIMILAR_LETTERS = {
+    'a':'а',
+    'b':'ь',
+    'c':'с',
+    'e':'е',
+    'k':'к',
+    'm':'м',
+    'n':'п',
+    'o':'о',
+    'p':'р',
+    'r':'г',
+    'u':'и',
+    'x':'х',
+    'y':'у',
+    'A':'А',
+    'B':'В',
+    'C':'С',
+    'E':'Е',
+    'H':'Н',
+    'K':'К',
+    'M':'М',
+    'O':'О',
+    'P':'Р',
+    'T':'Т',
+    'X':'Х',
+    'Y':'У'
+}
 USERNAME = os.getlogin()
 BASE_DIR = f'C:/Users/{USERNAME}/Documents/Social_capital'
 CACHE_FILE = f'C:/Users/{USERNAME}/Documents/Social_capital/CACHE.xlsx'
 # Необходимо заменить значение переменной REPORT_NAME на имя анализируемого результата анкетирования
-REPORT_NAME = '2024-10-01 MAOU SOSh 131'
+REPORT_NAME = '2024-10-12 MAOU SOSh 87'
 WORKBOOK = openpyxl.open(f'{BASE_DIR}/{REPORT_NAME}.xlsx')
 WORKSHEET = WORKBOOK['Sheet']
 FIRST_MATRIX_QUESTION = '«Кто из коллег, по вашему мнению, являются лучшими педагогами (преподавателями, воспитателями) вашей образовательной организации?»'
-
 
 def create_cache(filename):
     """Функция создания кэша, где хранятся имена отчетов, уже проанализированных"""
@@ -75,26 +103,52 @@ def first_matrix_start(question, data):
             pass
 
 
+def symbol_change(text):
+    result = ''
+    for letter in text:
+        if letter == ' ':
+            result += letter
+        elif detect(letter) != 'en':
+            result += letter
+        else:
+            result += SIMILAR_LETTERS[letter]
+    return result
+
+
 def fill_the_matrix(matrix, start, data, amount, workbook, teachers_indexes):
     """Заполнение матрицы данными"""
-    for current_row in range(2, amount+3):
+    for current_row in range(2, amount+2):
         for current_column in range(start, start+amount):
             if data.cell(row=current_row, column=current_column).value is not None:
-                matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
-                matrix_column = teachers_indexes[data.cell(row=current_row, column=current_column).value]
-                matrix.cell(row=matrix_row, column=matrix_column).value = 1
+                if data.cell(row=current_row, column=current_column).value in teachers_indexes:
+                    matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
+                    matrix_column = teachers_indexes[data.cell(row=current_row, column=current_column).value]
+                    matrix.cell(row=matrix_row, column=matrix_column).value = 1
+                else:
+                    name = symbol_change(data.cell(row=current_row, column=1).value)
+                    matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
+                    matrix_column = teachers_indexes[name]
+                    matrix.cell(row=matrix_row, column=matrix_column).value = 1
             else:
-                matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
-                matrix_column = teachers_indexes[data.cell(row=1, column=current_column).value[133:]]
-                matrix.cell(row=matrix_row, column=matrix_column).value = 0
+                if data.cell(row=1, column=current_column).value[133:] in teachers_indexes:
+                    matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
+                    matrix_column = teachers_indexes[data.cell(row=1, column=current_column).value[133:]]
+                    matrix.cell(row=matrix_row, column=matrix_column).value = 0
+                else:
+                    name = symbol_change(data.cell(row=1, column=current_column).value[133:])
+                    matrix_row = teachers_indexes[data.cell(row=current_row, column=1).value]
+                    matrix_column = teachers_indexes[name]
+                    matrix.cell(row=matrix_row, column=matrix_column).value = 0
     workbook.save(f'{BASE_DIR}/{REPORT_NAME}.xlsx')
     return workbook['matrix_best_teacher']
 
 
+def get_nodes(teachers_indexes):
+    return [teacher[1] for teacher in teachers_indexes.items()]
+
 def get_edges(matrix, teachers_indexes, amount, workbook):
     """Создание массива ребер для построения графа"""
     edges = []
-    nodes = []
     workbook.create_sheet('edges')
     worksheet = WORKBOOK['edges']
     start_row = 1
@@ -107,16 +161,13 @@ def get_edges(matrix, teachers_indexes, amount, workbook):
                         teachers_indexes[matrix.cell(row=1, column=current_column).value]
                     )
                 )
-                nodes.append(teachers_indexes[matrix.cell(row=current_row, column=1).value])
-                nodes.append(teachers_indexes[matrix.cell(row=1, column=current_column).value])
                 worksheet.cell(row=start_row, column=1).value = teachers_indexes[matrix.cell(row=current_row, column=1).value]
                 worksheet.cell(row=start_row, column=2).value = teachers_indexes[matrix.cell(row=1, column=current_column).value]
                 start_row += 1
             else:
                 pass
-    nodes = list(set(nodes))
     workbook.save(f'{BASE_DIR}/{REPORT_NAME}.xlsx')
-    return edges, nodes
+    return edges
 
 
 def get_titles(teachers_indexes):
@@ -143,11 +194,7 @@ if __name__ == '__main__':
     matrix = create_matrix(teachers_list, teachers_amount, WORKBOOK)
     first_matrix_pivot = first_matrix_start(FIRST_MATRIX_QUESTION, WORKSHEET)
     filled_matrix = fill_the_matrix(matrix, first_matrix_pivot, WORKSHEET, teachers_amount, WORKBOOK, teachers_indexes)
-    edges, nodes = get_edges(filled_matrix, teachers_indexes, teachers_amount, WORKBOOK)
+    edges = get_edges(filled_matrix, teachers_indexes, teachers_amount, WORKBOOK)
+    nodes = get_nodes(teachers_indexes)
     titles = get_titles(teachers_indexes)
     graph_define(nodes, edges, titles)
-
-
-
-
-

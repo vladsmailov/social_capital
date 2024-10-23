@@ -1,52 +1,46 @@
-import matplotlib.pyplot as plt
-import networkx as nx
+
 from pyvis.network import Network
 
 def graph_define(nodes, edges, titles):
-    # G = nx.Graph()  # создаём объект графа
-    G = nx.karate_club_graph()
-
-    # определяем список узлов (ID узлов)
-    nodes = nodes
-
-    # определяем список рёбер
-    # список кортежей, каждый из которых представляет ребро
-    # кортеж (id_1, id_2) означает, что узлы id_1 и id_2 соединены ребром
-    edges = edges
-    # добавляем информацию в объект графа
-    G.add_nodes_from(nodes)
-    G.add_edges_from(edges)
-
-    # задаем цвета (1 - директор, 2, 3 - завучи)
     color_map = []
-    for node in G:
-        if node == 2:
+    for node in nodes:
+        if node == 15:
             color_map.append('red')
-        elif node in (3, 4):
+        elif node in (2, 3, 9, 13, 26, 33):
             color_map.append('orange')
+        elif node in (4, 5, 14, 44):
+            color_map.append('pink')
+        elif node in (6, 12, 17, 24, 34, 40, 43):
+            color_map.append('blue')
+        elif node in (7, 16, 30, 38):
+            color_map.append('silver')
+        elif node in (8, 10, 25, 31):
+            color_map.append('grey')
+        elif node in (11, 20):
+            color_map.append('yellow')
+        elif node in (18, 21, 27, 36):
+            color_map.append('brown')
+        elif node in (22, 28, 29, 35, 42):
+            color_map.append('purple')
         else:
             color_map.append('green')
 
-        # рисуем граф и отображаем его
-    nx.draw_circular(G, with_labels=True, font_weight='bold', node_color=color_map, node_size=1000, arrows=True, arrowstyle='<-')
-    plt.show()
-    net = Network("2000px", "2000px", select_menu=True)  # создаём объект графа
+    net = Network("1000px", "1000px", select_menu=True)
 
-    # добавление узлов
     net.add_nodes(
-        nodes,  # node ids
-        label=['директор', 'зам.директора', 'заведующий', 'заведующий', 'заведующий', 'программист', 'программист',
-               'программист', 'специалист по УМР', 'специалист по УМР', 'методист', 'специалист по УМР', 'программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист','программист',],  # node labels
-        # node titles (display on mouse hover)
+        nodes,
+        label=['Зам. директора', 'Заместитель директора, учитель физкультуры, биологии', 'Учитель английского языка', 'учитель английского языка', 'учитель начальных классов', 'Учитель географии',
+                'Социальный педагог', 'Заместитель директора', 'Учитель - логопед', 'Учитель химии, биологии', 'Учитель начальных классов', 'Заместитель директора  по УД', 'Учитель английского языка',
+                'Директор', 'Учитель  истории и обществознания', 'Учитель начальных классов', 'Учитель русского языка и литературы', 'Учитель', 'Учитель физики', 'Учитель русского языка, английского языка',
+                'Учитель математики', 'Учитель музыки и изо', 'Учитель начальных классов', 'Учитель - логопед', 'Заместитель директора, учитель ОБЖ', 'Учитель русского языка и литературы', 'Учитель информатики',
+                'Учитель математики', 'Советник по воспитанию, учитель истории', 'Педагог – организатор ,', 'Учитель музыки', 'Заместитель директора, учитель истории и обществознания', 'Учитель начальных классов',
+                'Учитель математики', 'Учитель русского языка и литературы', 'Учитель технологии', 'Учитель географии', 'Учитель физической культуры', 'Учитель начальных классов', 'Учитель технологии', 'Учитель математики',
+                'Учитель начальных классов', 'Учитель английского языка'],
         title=titles,
-        color=['red', 'orange', 'green', 'green', 'green', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue','blue',]
-        # node colors (HEX)
+        color=color_map
     )
-    # добавляем тот же список узлов, что и в предыдущем примере
     for edge in edges:
         net.add_edge(edge[0], edge[1])
-
-    # net.toggle_physics(False)
     net.show_buttons(filter_=['physics'])
-    net.show('graph5.html', notebook=False)  # save visualization in 'graph.html'
+    net.show('graph5.html', notebook=False)
     net.save_graph('graph5.html')
