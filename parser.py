@@ -2,7 +2,21 @@ import openpyxl
 import os
 from graphs import graph_define
 from langdetect import detect
+from collections import Counter
 
+LABLES = ['Зам. директора', 'Заместитель директора, учитель физкультуры, биологии', 'Учитель английского языка',
+     'учитель английского языка', 'учитель начальных классов', 'Учитель географии',
+     'Социальный педагог', 'Заместитель директора', 'Учитель - логопед', 'Учитель химии, биологии',
+     'Учитель начальных классов', 'Заместитель директора  по УД', 'Учитель английского языка',
+     'Директор', 'Учитель  истории и обществознания', 'Учитель начальных классов',
+     'Учитель русского языка и литературы', 'Учитель', 'Учитель физики', 'Учитель русского языка, английского языка',
+     'Учитель математики', 'Учитель музыки и изо', 'Учитель начальных классов', 'Учитель - логопед',
+     'Заместитель директора, учитель ОБЖ', 'Учитель русского языка и литературы', 'Учитель информатики',
+     'Учитель математики', 'Советник по воспитанию, учитель истории', 'Педагог – организатор ,', 'Учитель музыки',
+     'Заместитель директора, учитель истории и обществознания', 'Учитель начальных классов',
+     'Учитель математики', 'Учитель русского языка и литературы', 'Учитель технологии', 'Учитель географии',
+     'Учитель физической культуры', 'Учитель начальных классов', 'Учитель технологии', 'Учитель математики',
+     'Учитель начальных классов', 'Учитель английского языка']
 
 SIMILAR_LETTERS = {
     'a':'а',
@@ -104,6 +118,7 @@ def first_matrix_start(question, data):
 
 
 def symbol_change(text):
+    """Замена латинских символов на кириллицу"""
     result = ''
     for letter in text:
         if letter == ' ':
@@ -144,7 +159,17 @@ def fill_the_matrix(matrix, start, data, amount, workbook, teachers_indexes):
 
 
 def get_nodes(teachers_indexes):
+    """Создание списка узлов"""
     return [teacher[1] for teacher in teachers_indexes.items()]
+
+
+def get_two_side_nodes(two_side_edges):
+    """Создание узлов с обратной связью"""
+    return list(set([edge[0] for edge in two_side_edges]))
+
+
+def grt_three_side_nodes():
+    pass
 
 def get_edges(matrix, teachers_indexes, amount, workbook):
     """Создание массива ребер для построения графа"""
@@ -170,9 +195,71 @@ def get_edges(matrix, teachers_indexes, amount, workbook):
     return edges
 
 
+def get_lables(nodes):
+    """Получение должностей в зависимости от списка узлов"""
+    lables = []
+    for node in nodes:
+        lables.append(LABLES[node-2])
+    return lables
+
+
+def get_two_side_edges(edges):
+    """Получение ребер с обратной связью"""
+    two_side_edges = []
+    for index in range(len(edges)-1):
+        for second_index in range(1, len(edges)):
+            if edges[index] == (edges[second_index][1], edges[second_index][0]):
+                two_side_edges.append(edges[index])
+                two_side_edges.append(edges[second_index])
+            else:
+                pass
+    return two_side_edges
+
+
+def get_three_side_nodes(two_side_edges):
+    """Получение ребер взаимных связей между 3 преподавателями"""
+    result = []
+    for index in range(0, len(two_side_edges) - 4, 2):
+        temp = two_side_edges[index]
+        for second_index in range(index + 2, len(two_side_edges) - 2, 2):
+            if temp[0] in two_side_edges[second_index]:
+                temp_2 = list(two_side_edges[second_index])
+                temp_2.remove(temp[0])
+                if (temp[1], temp_2[0]) in two_side_edges[second_index + 2:]:
+                    result.append((two_side_edges[index], two_side_edges[index + 1],
+                                   two_side_edges[second_index], two_side_edges[second_index + 1],
+                                   (temp[1], temp_2[0]), (temp_2[0], temp[1])))
+    return result
+
+
+
+def get_node_size(edges, nodes):
+    """Задание массы узла в зависимости от количества связей"""
+    sizes = {}
+    for node in nodes:
+        node -= 1
+        sizes[node] = 5
+    for edge in edges:
+        node_number = edge[1]-1
+        if node_number in sizes:
+            sizes[node_number] += 1
+        else:
+            pass
+    return sizes
+
+
 def get_titles(teachers_indexes):
     """Получение заголовков для построения графа"""
     return list(teachers_indexes.keys())
+
+
+def get_two_side_titles(nodes, teachers_indexes):
+    """Получение заголовка для двухсторонних связей"""
+    titles = []
+    for title, id in teachers_indexes.items():
+        if id in nodes:
+            titles.append(title)
+    return titles
 
 
 if __name__ == '__main__':
@@ -196,5 +283,14 @@ if __name__ == '__main__':
     filled_matrix = fill_the_matrix(matrix, first_matrix_pivot, WORKSHEET, teachers_amount, WORKBOOK, teachers_indexes)
     edges = get_edges(filled_matrix, teachers_indexes, teachers_amount, WORKBOOK)
     nodes = get_nodes(teachers_indexes)
+    nodes_sizes = get_node_size(edges, nodes)
     titles = get_titles(teachers_indexes)
-    graph_define(nodes, edges, titles)
+    lables = get_lables(nodes)
+    # graph_define(nodes, edges, titles, nodes_sizes, lables)
+    two_side_edges = get_two_side_edges(edges)
+    two_side_nodes = get_two_side_nodes(two_side_edges)
+    two_side_nodes_size = get_node_size(two_side_edges, two_side_nodes)
+    two_side_titles = get_two_side_titles(two_side_nodes, teachers_indexes)
+    two_side_lables = get_lables(two_side_nodes)
+    # graph_define(two_side_nodes, two_side_edges, two_side_titles, two_side_nodes_size, two_side_lables)
+    print(two_side_edges)
