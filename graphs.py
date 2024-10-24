@@ -1,46 +1,49 @@
 
 from pyvis.network import Network
 
-def graph_define(nodes, edges, titles):
+
+def graph_define(nodes_indexes, edges, titles, nodes_sizes, lables):
     color_map = []
+    nodes = []
+
+    for index in nodes_indexes:
+        nodes.append(index-1)
     for node in nodes:
-        if node == 15:
+        if node == 14:
             color_map.append('red')
-        elif node in (2, 3, 9, 13, 26, 33):
+        elif node in (1, 2, 8, 12, 25, 32):
             color_map.append('orange')
-        elif node in (4, 5, 14, 44):
+        elif node in (3, 4, 13, 43):
             color_map.append('pink')
-        elif node in (6, 12, 17, 24, 34, 40, 43):
+        elif node in (5, 11, 16, 23, 33, 39, 42):
             color_map.append('blue')
-        elif node in (7, 16, 30, 38):
+        elif node in (6, 15, 29, 37):
             color_map.append('silver')
-        elif node in (8, 10, 25, 31):
+        elif node in (7, 9, 24, 30):
             color_map.append('grey')
-        elif node in (11, 20):
+        elif node in (10, 19):
             color_map.append('yellow')
-        elif node in (18, 21, 27, 36):
+        elif node in (17, 20, 26, 35):
             color_map.append('brown')
-        elif node in (22, 28, 29, 35, 42):
+        elif node in (21, 27, 28, 34, 41):
             color_map.append('purple')
         else:
             color_map.append('green')
 
-    net = Network("1000px", "1000px", select_menu=True)
+    net = Network("1000px", "100%", directed=True, cdn_resources="remote", filter_menu=True, neighborhood_highlight=True, bgcolor="#b0b0b0")
 
     net.add_nodes(
-        nodes,
-        label=['Зам. директора', 'Заместитель директора, учитель физкультуры, биологии', 'Учитель английского языка', 'учитель английского языка', 'учитель начальных классов', 'Учитель географии',
-                'Социальный педагог', 'Заместитель директора', 'Учитель - логопед', 'Учитель химии, биологии', 'Учитель начальных классов', 'Заместитель директора  по УД', 'Учитель английского языка',
-                'Директор', 'Учитель  истории и обществознания', 'Учитель начальных классов', 'Учитель русского языка и литературы', 'Учитель', 'Учитель физики', 'Учитель русского языка, английского языка',
-                'Учитель математики', 'Учитель музыки и изо', 'Учитель начальных классов', 'Учитель - логопед', 'Заместитель директора, учитель ОБЖ', 'Учитель русского языка и литературы', 'Учитель информатики',
-                'Учитель математики', 'Советник по воспитанию, учитель истории', 'Педагог – организатор ,', 'Учитель музыки', 'Заместитель директора, учитель истории и обществознания', 'Учитель начальных классов',
-                'Учитель математики', 'Учитель русского языка и литературы', 'Учитель технологии', 'Учитель географии', 'Учитель физической культуры', 'Учитель начальных классов', 'Учитель технологии', 'Учитель математики',
-                'Учитель начальных классов', 'Учитель английского языка'],
+        nodes=nodes,
+        label=lables,
+        size=[size[1] for size in nodes_sizes.items()],
         title=titles,
         color=color_map
     )
     for edge in edges:
-        net.add_edge(edge[0], edge[1])
-    net.show_buttons(filter_=['physics'])
+        net.add_edge(edge[0]-1, edge[1]-1)
+    net.show_buttons(filter_=['nodes', 'edges', 'physics'])
+    net.force_atlas_2based()
+    net.toggle_physics(False)
     net.show('graph5.html', notebook=False)
     net.save_graph('graph5.html')
+    net.write_html('grath.html')
