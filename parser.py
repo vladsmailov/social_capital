@@ -2,7 +2,6 @@ import openpyxl
 import os
 from graphs import graph_define
 from langdetect import detect
-from collections import Counter
 
 LABLES = ['Зам. директора', 'Заместитель директора, учитель физкультуры, биологии', 'Учитель английского языка',
      'учитель английского языка', 'учитель начальных классов', 'Учитель географии',
@@ -53,7 +52,8 @@ REPORT_NAME = '2024-10-12 MAOU SOSh 87'
 WORKBOOK = openpyxl.open(f'{BASE_DIR}/{REPORT_NAME}.xlsx')
 WORKSHEET = WORKBOOK['Sheet']
 FIRST_MATRIX_QUESTION = '«Кто из коллег, по вашему мнению, являются лучшими педагогами (преподавателями, воспитателями) вашей образовательной организации?»'
-
+SECOND_MATRIX_QUESTION = 'Кого из коллег вы хотели бы видеть в составе вновь организованной группы для решения какой-либо проблемы в области преподавания и воспитания?'
+QUESTIONS_LIST = [FIRST_MATRIX_QUESTION, SECOND_MATRIX_QUESTION]
 def create_cache(filename):
     """Функция создания кэша, где хранятся имена отчетов, уже проанализированных"""
     cache = openpyxl.Workbook(filename)
@@ -96,10 +96,14 @@ def teatchers_dict(teachers_list):
     return teachers_dict
 
 
-def create_matrix(teachers, amount, workbook):
+def create_matrix(teachers, amount, workbook, question, questions_list):
     """Создание матрицы выбора лучшего преподавателя"""
-    workbook.create_sheet('matrix_best_teacher')
-    worksheet = workbook['matrix_best_teacher']
+    if questions_list.index(question) == 0:
+        workbook.create_sheet('matrix_best_teacher')
+        worksheet = workbook['matrix_best_teacher']
+    elif questions_list.index(question) == 1:
+        workbook.create_sheet('parenting_problems_group')
+        worksheet = workbook['parenting_problems_group']
     for current_cell in range(2, amount+2):
         worksheet.cell(row=current_cell, column=1).value = teachers[current_cell-2]
         worksheet.cell(row=1, column=current_cell).value = teachers[current_cell-2]
@@ -107,8 +111,8 @@ def create_matrix(teachers, amount, workbook):
     return worksheet
 
 
-def first_matrix_start(question, data):
-    """Поиск начала первой матрицы по вопросу"""
+def matrix_start(question, data):
+    """Поиск начала матрицы по вопросу"""
     columns = data.max_column
     for current_column in range(1, columns+1):
         if question in data.cell(row=1, column=current_column).value:
@@ -278,19 +282,23 @@ if __name__ == '__main__':
     teachers_list = get_teachers_list(WORKSHEET)
     teachers_amount = len(teachers_list)
     teachers_indexes = teatchers_dict(teachers_list)
-    matrix = create_matrix(teachers_list, teachers_amount, WORKBOOK)
-    first_matrix_pivot = first_matrix_start(FIRST_MATRIX_QUESTION, WORKSHEET)
+    matrix = create_matrix(teachers_list, teachers_amount, WORKBOOK, FIRST_MATRIX_QUESTION, QUESTIONS_LIST)
+    first_matrix_pivot = matrix_start(FIRST_MATRIX_QUESTION, WORKSHEET)
     filled_matrix = fill_the_matrix(matrix, first_matrix_pivot, WORKSHEET, teachers_amount, WORKBOOK, teachers_indexes)
     edges = get_edges(filled_matrix, teachers_indexes, teachers_amount, WORKBOOK)
     nodes = get_nodes(teachers_indexes)
     nodes_sizes = get_node_size(edges, nodes)
     titles = get_titles(teachers_indexes)
-    lables = get_lables(nodes)
-    # graph_define(nodes, edges, titles, nodes_sizes, lables)
+    labels = get_lables(nodes)
+    # graph_define(nodes, edges, titles, nodes_sizes, labels)
     two_side_edges = get_two_side_edges(edges)
     two_side_nodes = get_two_side_nodes(two_side_edges)
     two_side_nodes_size = get_node_size(two_side_edges, two_side_nodes)
     two_side_titles = get_two_side_titles(two_side_nodes, teachers_indexes)
-    two_side_lables = get_lables(two_side_nodes)
-    # graph_define(two_side_nodes, two_side_edges, two_side_titles, two_side_nodes_size, two_side_lables)
-    print(two_side_edges)
+    two_side_labels = get_lables(two_side_nodes)
+    # graph_define(two_side_nodes, two_side_edges, two_side_titles, two_side_nodes_size, two_side_labels)
+    three_side_nodes = get_three_side_nodes(two_side_nodes)
+    matrix_2 = create_matrix(teachers_list, teachers_amount, WORKBOOK, SECOND_MATRIX_QUESTION, QUESTIONS_LIST)
+    second_matrix_pivot = matrix_start(SECOND_MATRIX_QUESTION, WORKSHEET)
+
+
